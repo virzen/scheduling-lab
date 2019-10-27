@@ -1,4 +1,4 @@
-let joinWith separator (iterable: System.Collections.Generic.IEnumerable<string>) =
+let joinWith separator (iterable: seq<string>) =
   System.String.Join(separator, iterable)
 
 module Task =

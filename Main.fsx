@@ -4,13 +4,16 @@ let sample (random: System.Random) (array: array<'a>) =
     let index = random.Next(Array.length array)
     Array.get array index
 
-module Task =
-    type T =
-        { p: int
-          r: int
-          d: int }
+type Task =
+    { p: int
+      r: int
+      d: int }
 
-    let toString (task: T): string =
+type Instance = seq<Task>
+
+module Task =
+
+    let toString (task: Task): string =
         [ task.p; task.r; task.d ]
         |> List.map string
         |> joinWith " "
@@ -20,7 +23,7 @@ module Task =
           r = (random.Next(1, 10))
           d = (random.Next(1, 10)) }
 
-    let create r p d: T =
+    let create r p d: Task =
         { p = r
           r = p
           d = d }
@@ -32,7 +35,7 @@ module Task =
 
     let toPrettyString task = String.replicate task.r " " + String.replicate task.p "X"
 
-    let printMany (tasks: seq<T>) =
+    let printMany (tasks: seq<Task>) =
         tasks
         |> Seq.map toPrettyString
         |> joinWith "\n"
@@ -43,16 +46,10 @@ module Task =
 
 
 module Instance =
-    type T =
-        // TODO: refactor not to use size
-        { size: int
-          tasks: seq<Task.T> }
-
     let generateFullyRandomly random size =
         let tasks = seq { 1 .. size } |> Seq.map (fun _ -> Task.generateRandom random)
 
-        { size = size
-          tasks = tasks }
+        tasks
 
     module Group =
         type GenerationMethod =
@@ -60,8 +57,6 @@ module Instance =
             | Longest
 
         let methods = [| EDD; Longest |]
-
-        type T = seq<Task.T>
 
         let generateForEDD (random: System.Random) r =
             let generateTriple _ =
@@ -72,9 +67,9 @@ module Instance =
                 let pi2 = pi - pi1
                 let d = r + pi
 
-                let task1 = Task.create r pi d
-                let task2 = Task.create r pi1 d
-                let task3 = Task.create r pi2 d
+                let task1 = Task.create pi r d
+                let task2 = Task.create pi1 r d
+                let task3 = Task.create pi2 r d 
 
                 [ task1; task2; task3 ]
 
@@ -85,7 +80,7 @@ module Instance =
 
 
 
-        let generateForLongest (random: System.Random) r: T =
+        let generateForLongest (random: System.Random) r: Instance =
             let generatePair _ =
                 let pi = random.Next(3, 10)
                 let pi1 = random.Next(1, pi)
@@ -93,9 +88,9 @@ module Instance =
                 let di = random.Next(a, a + 10)
                 let di1 = random.Next(a + 1)
 
-                let task1 = Task.create r pi di
+                let task1 = Task.create pi r di
 
-                let task2 = Task.create r pi1 di1
+                let task2 = Task.create pi1 r di1
 
                 [ task1; task2 ]
 
@@ -107,7 +102,7 @@ module Instance =
 
 
 
-        let create (random: System.Random) method count: T =
+        let create (random: System.Random) method count: Instance =
             let r = random.Next(1, 10)
 
             let group =
@@ -147,18 +142,13 @@ module Instance =
             |> Seq.concat
             |> Seq.concat
 
-        { size = instanceSize
-          tasks = tasks }
+        tasks
 
-
-
-
-
-    let toString (i: T) =
-        let sizeString = string i.size
+    let toString (i: Instance) =
+        let sizeString = string (Seq.length i)
 
         let taskStrings =
-            i.tasks
+            i
             |> Seq.map Task.toString
             |> List.ofSeq
 

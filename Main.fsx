@@ -173,4 +173,4 @@ let randomGenerator = System.Random()
 
 Instance.generate randomGenerator n
 |> Instance.toString
-|> printf "%A"
+|> printf "%s"

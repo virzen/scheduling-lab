@@ -6,28 +6,28 @@ let sample (random: System.Random) (array: array<'a>) =
 
 module Task =
     type T =
-        { r: int
-          p: int
+        { p: int
+          r: int
           d: int }
 
     let toString (task: T): string =
-        [ task.r; task.p; task.d ]
+        [ task.p; task.r; task.d ]
         |> List.map string
         |> joinWith " "
 
     let generateRandom (random: System.Random) =
-        { r = (random.Next(1, 10))
-          p = (random.Next(1, 10))
+        { p = (random.Next(1, 10))
+          r = (random.Next(1, 10))
           d = (random.Next(1, 10)) }
 
     let create r p d: T =
-        { r = r
-          p = p
+        { p = r
+          r = p
           d = d }
 
     let empty =
-        { r = 0
-          p = 0
+        { p = 0
+          r = 0
           d = 0 }
 
     let toPrettyString task = String.replicate task.r " " + String.replicate task.p "X"

@@ -11,6 +11,13 @@ type Task =
 
 type Instance = seq<Task>
 
+let assert2 condition description = 
+    if not condition
+    then 
+        printfn "Failed assertion: %s" description
+        exit 1
+    else ()
+
 module Task =
 
     let toString (task: Task): string =
@@ -23,10 +30,12 @@ module Task =
           r = (random.Next(1, 10))
           d = (random.Next(1, 10)) }
 
-    let create r p d: Task =
-        { p = r
-          r = p
-          d = d }
+    let create (p: int) (r: int) (d: int): Task =
+        assert2 (p >= 1) "task must have non-zero length" |> ignore
+        assert2 (p <= (d - r)) "task must doable within ready time and due date" |> ignore
+        assert2 (d > r) "ready time must be before due date" |> ignore
+
+        { p = p; r = r; d = d }
 
     let empty =
         { p = 0
@@ -58,20 +67,24 @@ module Instance =
 
         let methods = [| EDD; Longest |]
 
+        let generateNumbersSummingTo (random: System.Random) sum =
+            assert2 (sum >= 2) "sum must be at least 2"
+
+            let rand = random.Next(1, sum - 1)
+            let a = rand
+            let b = sum - rand
+
+            (a, b)
+
         let generateForEDD (random: System.Random) r =
             let generateTriple _ =
-                let rand = random.Next(1, 10)
-                let pi = rand
-                let rand2 = random.Next(1, pi)
-                let pi1 = pi - rand2
-                let pi2 = pi - pi1
+                let pi = random.Next(2, 10)
+                let (pi1, pi2) = (generateNumbersSummingTo random pi)
                 let d = r + pi
 
-                let task1 = Task.create pi r d
-                let task2 = Task.create pi1 r d
-                let task3 = Task.create pi2 r d 
-
-                [ task1; task2; task3 ]
+                [ (Task.create pi r d)
+                  (Task.create pi1 r d)
+                  (Task.create pi2 r d ) ]
 
             seq { 1 .. 2 }
             |> Seq.map generateTriple
@@ -110,7 +123,7 @@ module Instance =
                 | EDD -> generateForEDD random r
                 | Longest -> generateForLongest random r
 
-            group |> Seq.take count
+            Seq.take count group
 
 
 

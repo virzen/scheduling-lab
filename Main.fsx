@@ -96,16 +96,13 @@ module Instance =
         let generateForLongest (random: System.Random) r: Instance =
             let generatePair _ =
                 let pi = random.Next(3, 10)
-                let pi1 = random.Next(1, pi)
+                let pi1 = random.Next(1, pi - 1)
                 let a = (r + pi + pi1)
                 let di = random.Next(a, a + 10)
-                let di1 = random.Next(a + 1)
+                let di1 = random.Next(r + pi1, a)
 
-                let task1 = Task.create pi r di
-
-                let task2 = Task.create pi1 r di1
-
-                [ task1; task2 ]
+                [ (Task.create pi r di)
+                  (Task.create pi1 r di1) ]
 
             seq { 1 .. 3 }
             |> Seq.map generatePair

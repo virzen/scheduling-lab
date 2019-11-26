@@ -11,9 +11,9 @@ type Task =
 
 type Instance = seq<Task>
 
-let assert2 condition description = 
+let assert2 condition description =
     if not condition
-    then 
+    then
         printfn "Failed assertion: %s" description
         exit 1
     else ()
@@ -125,9 +125,9 @@ module Instance =
 
 
 
-
+    // TODO: condense
     let generate (random: System.Random) instanceSize =
-        let generateGroupsWithMethod (method, groupCounts) = groupCounts |> Seq.map (Group.create random method)
+        let generateGroupsWithMethod (method, groupCounts) =  Seq.map (Group.create random method) groupCounts
 
         let groupSize = 6
 

@@ -11,7 +11,10 @@ type Task =
 
 type Instance = seq<Task>
 
-let assert2 condition description =
+type Solution = 
+    int list list
+
+let assert2 condition description = 
     if not condition
     then
         printfn "Failed assertion: %s" description
@@ -109,9 +112,6 @@ module Instance =
             |> List.concat
             |> List.toSeq
 
-
-
-
         let create (random: System.Random) method count: Instance =
             let r = random.Next(1, 10)
 
@@ -164,6 +164,26 @@ module Instance =
 
         sizeString :: taskStrings
         |> joinWith "\n"
+
+module Solution = 
+    type Method = 
+        | FirstFreeMachine
+
+    let empty: Solution = 
+        [[]; []; []; []]
+
+    let firstFreeMachine (instance: Instance) =
+        raise (System.NotImplementedException "Not ready")
+
+    let solve (method: Method) (instance: Instance): Solution = 
+        match method with 
+        | FirstFreeMachine -> firstFreeMachine instance
+
+    let totalLateness (s: Solution) =
+        raise (System.NotImplementedException "Not ready")
+
+    let toString (s: Solution) =
+        raise (System.NotImplementedException "Not ready")
 
 
 // MAIN

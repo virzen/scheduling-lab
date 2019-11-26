@@ -154,7 +154,7 @@ module Instance =
 
         tasks
 
-    let toString (i: Instance) =
+    let serialize (i: Instance) =
         let sizeString = string (Seq.length i)
 
         let taskStrings =
@@ -192,5 +192,5 @@ let n = 50
 let randomGenerator = System.Random()
 
 Instance.generate randomGenerator n
-|> Instance.toString
+|> Instance.serialize
 |> printf "%s"

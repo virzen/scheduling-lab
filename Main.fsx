@@ -39,6 +39,9 @@ module Task =
           |> List.map string
           |> joinWith " "
 
+    let id task =
+        task.id
+
 
 module TaskProperties =
 
@@ -172,10 +175,9 @@ module Instance =
         |> joinWith "\n"
 
 module Solution =
-    // let solveRandom (random: Random) (instance: Instance) =
-    //     Seq.groupBy (fun _ -> random.Next(1, 5)) instance
-    //     |> Seq.sortBy (fun (machine, _task) -> machine)
-    //     |> Seq.map (fun (machine, tasks) -> task.id)
+    let solveRandom (random: Random) (instance: Instance): Solution =
+        Seq.groupBy (fun _ -> random.Next(1, 5)) instance
+        |> Seq.map (fun (_, tasks) -> tasks)
 
     let solveStatic (instance: Instance): Solution =
         let sizePerMachine = ((Seq.length instance) ./. 4) |> ceil |> int
@@ -217,7 +219,7 @@ let randomGenerator = Random()
 
 let generateInstanceAndSolution n =
   let instance = Instance.generate randomGenerator n
-  let solution: Solution = Solution.solveStatic instance
+  let solution: Solution = Solution.solveRandom randomGenerator instance
 
   let inFilename = "in" + (string indexNumber) + "_" + (string n) + ".txt"
   let outFilename = "out" + (string indexNumber) + "_" + (string n) + ".txt"
@@ -226,4 +228,4 @@ let generateInstanceAndSolution n =
   solution |> Solution.serialize |> writeToFile outFilename
 
 
-Seq.iter generateInstanceAndSolution (seq { 50 .. 50 .. 500 })
+generateInstanceAndSolution 50

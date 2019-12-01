@@ -123,8 +123,8 @@ module Instance =
             |> List.concat
             |> List.toSeq
 
-        let create (random: Random) method count =
-            let r = random.Next(1, 10)
+        let create (random: Random) rRange method count =
+            let r = random.Next(1, rRange)
 
             let group =
                 match method with
@@ -137,8 +137,9 @@ module Instance =
 
 
     // TODO: condense
-    let generate (random: Random) instanceSize: Instance =
-        let generateGroupsWithMethod (method, groupCounts) =  Seq.map (Group.create random method) groupCounts
+    let generate instanceSize: Instance =
+        let random = Random()
+        let generateGroupsWithMethod (method, groupCounts) =  Seq.map (Group.create random instanceSize method) groupCounts
 
         let groupSize = 6
 
@@ -175,7 +176,9 @@ module Instance =
         |> joinWith "\n"
 
 module Solution =
-    let solveRandom (random: Random) (instance: Instance): Solution =
+    let solveRandom (instance: Instance): Solution =
+        let random = Random()
+
         Seq.groupBy (fun _ -> random.Next(1, 5)) instance
         |> Seq.map (fun (_, tasks) -> tasks)
 
@@ -215,11 +218,10 @@ module Solution =
 
 // MAIN
 let indexNumber = 133865
-let randomGenerator = Random()
 
 let generateInstanceAndSolution n =
-  let instance = Instance.generate randomGenerator n
-  let solution: Solution = Solution.solveRandom randomGenerator instance
+  let instance = Instance.generate n
+  let solution: Solution = Solution.solveRandom instance
 
   let inFilename = "in" + (string indexNumber) + "_" + (string n) + ".txt"
   let outFilename = "out" + (string indexNumber) + "_" + (string n) + ".txt"

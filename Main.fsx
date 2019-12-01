@@ -11,10 +11,10 @@ type Task =
 
 type Instance = seq<Task>
 
-type Solution = 
-    int list list
+let (./.) x y =
+    (x |> double) / (y |> double)
 
-let assert2 condition description = 
+let assert2 condition description =
     if not condition
     then
         printfn "Failed assertion: %s" description
@@ -165,25 +165,23 @@ module Instance =
         sizeString :: taskStrings
         |> joinWith "\n"
 
-module Solution = 
-    type Method = 
-        | FirstFreeMachine
+module Solution =
+    // let solveRandom (random: System.Random) (instance: Instance) =
+    //     Seq.groupBy (fun _ -> random.Next(1, 5)) instance
+    //     |> Seq.sortBy (fun (machine, _task) -> machine)
+    //     |> Seq.map (fun (machine, tasks) -> task.id)
 
-    let empty: Solution = 
-        [[]; []; []; []]
+    let solveStatic (instance: Instance) =
+        let sizePerMachine = ((Seq.length instance) ./. 4) |> ceil |> int
+        let withIndexes = Seq.mapi (fun task index -> (task, index)) instance
 
-    let firstFreeMachine (instance: Instance) =
-        raise (System.NotImplementedException "Not ready")
+        Seq.chunkBySize sizePerMachine withIndexes
 
-    let solve (method: Method) (instance: Instance): Solution = 
-        match method with 
-        | FirstFreeMachine -> firstFreeMachine instance
+    // let totalLateness (s: Solution) =
+    //     raise (System.NotImplementedException "Not ready")
 
-    let totalLateness (s: Solution) =
-        raise (System.NotImplementedException "Not ready")
-
-    let toString (s: Solution) =
-        raise (System.NotImplementedException "Not ready")
+    // let serialize (s: Solution) =
+    //     raise (System.NotImplementedException "Not ready")
 
 
 // MAIN
@@ -192,5 +190,5 @@ let n = 50
 let randomGenerator = System.Random()
 
 Instance.generate randomGenerator n
-|> Instance.serialize
-|> printf "%s"
+|> Solution.solveStatic
+|> printf "%A"

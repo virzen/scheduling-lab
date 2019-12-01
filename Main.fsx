@@ -1,8 +1,13 @@
-let joinWith separator (iterable: seq<string>) = System.String.Join(separator, iterable)
+open System
 
-let sample (random: System.Random) (array: array<'a>) =
+let joinWith separator (iterable: seq<string>) = String.Join(separator, iterable)
+
+let sample (random: Random) (array: array<'a>) =
     let index = random.Next(Array.length array)
     Array.get array index
+
+let writeToFile filename s =
+  IO.File.WriteAllText(filename, s)
 
 type TaskProperties =
     { p: int
@@ -14,6 +19,9 @@ type Task =
       properties: TaskProperties }
 
 type Instance = seq<Task>
+
+type Solution =
+  seq<seq<Task>>
 
 let (./.) x y =
     (x |> double) / (y |> double)
@@ -34,7 +42,7 @@ module Task =
 
 module TaskProperties =
 
-    let generateRandom (random: System.Random) =
+    let generateRandom (random: Random) =
         { p = (random.Next(1, 10))
           r = (random.Next(1, 10))
           d = (random.Next(1, 10)) }
@@ -45,11 +53,6 @@ module TaskProperties =
         assert2 (d > r) "ready time must be before due date" |> ignore
 
         { p = p; r = r; d = d }
-
-    let empty =
-        { p = 0
-          r = 0
-          d = 0 }
 
     let toPrettyString task = String.replicate task.r " " + String.replicate task.p "X"
 
@@ -75,7 +78,7 @@ module Instance =
 
         let methods = [| EDD; Longest |]
 
-        let generateNumbersSummingTo (random: System.Random) sum =
+        let generateNumbersSummingTo (random: Random) sum =
             assert2 (sum >= 2) "sum must be at least 2"
 
             let rand = random.Next(1, sum - 1)
@@ -84,7 +87,7 @@ module Instance =
 
             (a, b)
 
-        let generateForEDD (random: System.Random) r =
+        let generateForEDD (random: Random) r =
             let generateTriple _ =
                 let pi = random.Next(2, 10)
                 let (pi1, pi2) = (generateNumbersSummingTo random pi)
@@ -101,7 +104,7 @@ module Instance =
 
 
 
-        let generateForLongest (random: System.Random) r =
+        let generateForLongest (random: Random) r =
             let generatePair _ =
                 let pi = random.Next(3, 10)
                 let pi1 = random.Next(1, pi - 1)
@@ -117,7 +120,7 @@ module Instance =
             |> List.concat
             |> List.toSeq
 
-        let create (random: System.Random) method count =
+        let create (random: Random) method count =
             let r = random.Next(1, 10)
 
             let group =
@@ -131,7 +134,7 @@ module Instance =
 
 
     // TODO: condense
-    let generate (random: System.Random) instanceSize: Instance =
+    let generate (random: Random) instanceSize: Instance =
         let generateGroupsWithMethod (method, groupCounts) =  Seq.map (Group.create random method) groupCounts
 
         let groupSize = 6
@@ -169,28 +172,58 @@ module Instance =
         |> joinWith "\n"
 
 module Solution =
-    // let solveRandom (random: System.Random) (instance: Instance) =
+    // let solveRandom (random: Random) (instance: Instance) =
     //     Seq.groupBy (fun _ -> random.Next(1, 5)) instance
     //     |> Seq.sortBy (fun (machine, _task) -> machine)
     //     |> Seq.map (fun (machine, tasks) -> task.id)
 
-    let solveStatic (instance: Instance) =
+    let solveStatic (instance: Instance): Solution =
         let sizePerMachine = ((Seq.length instance) ./. 4) |> ceil |> int
-        let withIndexes = Seq.mapi (fun task index -> (task, index)) instance
 
-        Seq.chunkBySize sizePerMachine withIndexes
+        Seq.chunkBySize sizePerMachine instance
+        |> Seq.map Seq.ofArray
 
-    // let totalLateness (s: Solution) =
-    //     raise (System.NotImplementedException "Not ready")
+    type Accumulator =
+      { lastEnd: int; lateness: int }
 
-    // let serialize (s: Solution) =
-    //     raise (System.NotImplementedException "Not ready")
+    let latenessPerMachine (tasks: seq<Task>) =
+        let accumulate acc task =
+          let startTime = max acc.lastEnd task.properties.r
+          let endTime = startTime + task.properties.p
+          let lateness = max 0 endTime - task.properties.d
+
+          { lastEnd = endTime; lateness = acc.lateness + lateness }
+
+        let result = Seq.fold accumulate { lastEnd = 0; lateness = 0 } tasks
+
+        result.lateness
+
+    let totalLateness (s: Solution) =
+        Seq.map latenessPerMachine s |> Seq.sum
+
+    let serialize (s: Solution): string =
+        let machineToString (tasks: seq<Task>): string =
+          Seq.map (fun task -> task.id) tasks |> Seq.map string |> joinWith " "
+
+        let latenessString = totalLateness s |> string
+        let machinesStrings = Seq.map machineToString s |> joinWith "\n"
+
+        [ latenessString; machinesStrings ] |> joinWith "\n"
 
 
 // MAIN
-let n = 50
+let indexNumber = 133865
+let randomGenerator = Random()
 
-let randomGenerator = System.Random()
+let generateInstanceAndSolution n =
+  let instance = Instance.generate randomGenerator n
+  let solution: Solution = Solution.solveStatic instance
 
-Instance.generate randomGenerator n
-|> printf "%A"
+  let inFilename = "in" + (string indexNumber) + "_" + (string n) + ".txt"
+  let outFilename = "out" + (string indexNumber) + "_" + (string n) + ".txt"
+
+  instance |> Instance.serialize |> writeToFile inFilename
+  solution |> Solution.serialize |> writeToFile outFilename
+
+
+Seq.iter generateInstanceAndSolution (seq { 50 .. 50 .. 500 })

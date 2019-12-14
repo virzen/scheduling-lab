@@ -167,7 +167,7 @@ module Instance =
         |> Seq.map generateGroupsWithMethod
         |> Seq.concat
         |> Seq.concat
-        |> Seq.mapi (fun index taskProps -> { id = index; properties = taskProps })
+        |> Seq.mapi (fun index taskProps -> { id = index + 1; properties = taskProps })
 
     let serialize (i: Instance) =
         let sizeString = string (Seq.length i)

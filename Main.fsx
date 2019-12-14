@@ -1,6 +1,6 @@
 open System
 
-let joinWith separator (iterable: seq<string>) = String.Join(separator, iterable)
+let joinWith (separator: string) (iterable: seq<string>) = String.Join(separator, iterable)
 
 let sample (random: Random) (array: array<'a>) =
     let index = random.Next(Array.length array)

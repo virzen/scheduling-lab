@@ -9,6 +9,14 @@ let sample (random: Random) (array: array<'a>) =
 let writeToFile filename s =
   IO.File.WriteAllText(filename, s)
 
+let (./.) x y =
+    ((x |> double) / (y |> double))
+
+let chunkInto (n: int) seq =
+  let size = Seq.length seq
+  let chunkSize = ceil (size ./. n) |> int
+  Seq.chunkBySize chunkSize seq |> Seq.map (Seq.ofArray)
+
 type TaskProperties =
     { p: int
       r: int
@@ -22,9 +30,6 @@ type Instance = seq<Task>
 
 type Solution =
   seq<seq<Task>>
-
-let (./.) x y =
-    (x |> double) / (y |> double)
 
 let assert2 condition description =
     if not condition
@@ -188,6 +193,9 @@ module Solution =
         Seq.chunkBySize sizePerMachine instance
         |> Seq.map Seq.ofArray
 
+    let solveReference (instance: Instance): Solution =
+      chunkInto 4 instance
+
     type Accumulator =
       { lastEnd: int; lateness: int }
 
@@ -221,13 +229,12 @@ let indexNumber = 133865
 
 let generateInstanceAndSolution n =
   let instance = Instance.generate n
-  let solution: Solution = Solution.solveRandom instance
+  let solution: Solution = Solution.solveReference instance
 
   let inFilename = "in" + (string indexNumber) + "_" + (string n) + ".txt"
   let outFilename = "out" + (string indexNumber) + "_" + (string n) + ".txt"
 
   instance |> Instance.serialize |> writeToFile inFilename
   solution |> Solution.serialize |> writeToFile outFilename
-
 
 generateInstanceAndSolution 50

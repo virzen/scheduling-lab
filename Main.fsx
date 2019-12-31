@@ -35,6 +35,15 @@ let chunkInto (n: int) seq =
   let chunkSize = ceil (size ./. n) |> int
   Seq.chunkBySize chunkSize seq |> Seq.map (Seq.ofArray)
 
+let replace (x: 'a) (y: 'a) (xs: 'a list): 'a list =
+  let mapper a =
+    if (a = x) then y else a
+
+  List.map mapper xs
+
+let nestedListsToSeqs ls =
+  Seq.ofList (List.map Seq.ofList ls)
+
 type TaskProperties =
     { p: int
       r: int
@@ -64,6 +73,9 @@ module Task =
 
     let id task =
         task.id
+
+    let readyTime task =
+        task.properties.r
 
 
 module TaskProperties =
@@ -212,6 +224,33 @@ module Instance =
         sizeString :: taskStrings
         |> joinWith "\n"
 
+
+type Machine =
+  { id: int
+    tasks: Task list }
+
+module Machine =
+  let addTask t m =
+    let newTasks = List.append m.tasks [t]
+
+    { m with tasks = newTasks }
+
+  let empty (id: int): Machine =
+    { id = id; tasks = [] }
+
+  let lastEnd (machine: Machine): int =
+    List.fold (fun last task -> (max last task.properties.r) + task.properties.p) 0 machine.tasks
+
+  let id (m: Machine) =
+    m.id
+
+  let tasks (m: Machine) =
+    m.tasks
+
+
+
+
+
 module Solution =
     let solveRandom (instance: Instance): Solution =
         let random = Random()
@@ -227,6 +266,34 @@ module Solution =
 
     let solveReference (instance: Instance): Solution =
       chunkInto 4 instance
+
+    let ofMachineList (machines: Machine list): Solution =
+       machines
+       |> List.sortBy Machine.id
+       |> List.map Machine.tasks
+       |> nestedListsToSeqs
+
+
+    let solveFirstFreeMachineByReadyTime (instance: Instance): Solution =
+      let sortedTasks = Seq.sortBy Task.readyTime instance |> List.ofSeq
+
+      let firstReadyMachine machines = List.minBy Machine.lastEnd machines
+
+      let rec step machines tasksLeft =
+        match tasksLeft with
+        | [] -> machines
+        | task::rest ->
+            let selectedMachine = firstReadyMachine machines
+            let withTask = Machine.addTask task selectedMachine
+            let newMachines = replace selectedMachine withTask machines
+
+            step newMachines rest
+
+      let initialMachines = [(Machine.empty 1); (Machine.empty 2); (Machine.empty 3); (Machine.empty 4)]
+
+      step initialMachines sortedTasks |> ofMachineList
+
+
 
     type Accumulator =
       { lastEnd: int; lateness: int }
@@ -248,7 +315,7 @@ module Solution =
 
     let serialize (s: Solution): string =
         let machineToString (tasks: seq<Task>): string =
-          Seq.map (fun task -> task.id) tasks |> Seq.map string |> joinWith " "
+          Seq.map Task.id tasks |> Seq.map string |> joinWith " "
 
         let latenessString = totalLateness s |> string
         let machinesStrings = Seq.map machineToString s |> joinWith "\n"
@@ -287,10 +354,10 @@ let studentIdFromFilename filename =
   pathElements.[1]
 
 
-let solveAllInDirectory dirName =
+let solveAllInDirectory solver dirName =
   let filenames = filesInDirectory dirName |> Array.sortBy instanceFilenameToSortable
   let instances = Array.map Instance.fromFile filenames
-  let solutions = Array.map Solution.solveReference instances
+  let solutions = Array.map solver instances
   let latenesses = Array.map Solution.totalLateness solutions
 
   let lineToPrint args: string =
@@ -309,3 +376,4 @@ let solveAllInDirectory dirName =
   |> joinWith "\n\n"
   |> printf "%s"
 
+// Instance.fromFile "moje-wrzucone/in133865_50.txt" |> Solution.solveFirstFreeMachineByReadyTime |> Solution.serialize |> writeToFile "out133865_50.txt"

@@ -203,7 +203,7 @@ module Solution =
         let accumulate acc task =
           let startTime = max acc.lastEnd task.properties.r
           let endTime = startTime + task.properties.p
-          let lateness = max 0 endTime - task.properties.d
+          let lateness = max 0 (endTime - task.properties.d)
 
           { lastEnd = endTime; lateness = acc.lateness + lateness }
 

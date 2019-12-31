@@ -2,12 +2,30 @@ open System
 
 let joinWith (separator: string) (iterable: seq<string>) = String.Join(separator, iterable)
 
+let splitOn (separator: string) (s: string): string[] =
+  s.Split(separator)
+
+let padLeft (char: char) (length: int) (s:string): string =
+  s.PadLeft(length, char)
+
 let sample (random: Random) (array: array<'a>) =
     let index = random.Next(Array.length array)
     Array.get array index
 
+let readLines filename =
+  IO.File.ReadAllLines(filename)
+
+let intOfString (s: string): int =
+  Int32.Parse(s)
+
 let writeToFile filename s =
   IO.File.WriteAllText(filename, s)
+
+let filesInDirectory dirName =
+  IO.Directory.GetFiles(dirName)
+
+let isNotEmpty s =
+  String.length s > 0
 
 let (./.) x y =
     ((x |> double) / (y |> double))
@@ -61,6 +79,11 @@ module TaskProperties =
         assert2 (d > r) "ready time must be before due date" |> ignore
 
         { p = p; r = r; d = d }
+
+    let deserialize (s: string): TaskProperties =
+      let numbers = splitOn " " s |> Array.map intOfString
+
+      create numbers.[0] numbers.[1] numbers.[2]
 
     let toPrettyString task = String.replicate task.r " " + String.replicate task.p "X"
 
@@ -139,7 +162,16 @@ module Instance =
             Seq.take count group
 
 
+    let fromFile (filename: string): Instance =
+      let lines = readLines filename |> Array.filter isNotEmpty
+      let totalTasks = lines.[0] |> intOfString
+      let tasksProps = Array.map TaskProperties.deserialize lines.[1..]
 
+      assert2 (totalTasks = Array.length tasksProps) |> ignore
+
+      let tasks = Array.mapi (fun index props -> { id = index + 1; properties = props }) tasksProps
+
+      Seq.ofArray tasks
 
     // TODO: condense
     let generate instanceSize: Instance =
@@ -237,4 +269,43 @@ let generateInstanceAndSolution n =
   instance |> Instance.serialize |> writeToFile inFilename
   solution |> Solution.serialize |> writeToFile outFilename
 
-generateInstanceAndSolution 50
+let nth int (a: 'a array): 'a =
+  a.[int]
+
+let instanceFilenameToSortable (s: string) =
+  let withoutExtension = splitOn "." s |> nth 0
+  let elements = splitOn "_" withoutExtension
+  let paddedSize = padLeft '0' 3 elements.[1]
+
+  sprintf "%s%s" elements.[0] paddedSize
+
+let studentIdFromFilename filename =
+  let withoutExtension = splitOn "." filename |> nth 0
+  let path = splitOn "_" withoutExtension
+  let pathElements = splitOn "/" path.[0]
+
+  pathElements.[1]
+
+
+let solveAllInDirectory dirName =
+  let filenames = filesInDirectory dirName |> Array.sortBy instanceFilenameToSortable
+  let instances = Array.map Instance.fromFile filenames
+  let solutions = Array.map Solution.solveReference instances
+  let latenesses = Array.map Solution.totalLateness solutions
+
+  let lineToPrint args: string =
+    let filePath, lateness = args
+    let filename = filePath |> splitOn "/" |> nth 1
+    sprintf "%s: %d" filename lateness
+
+  let solutionsPerStudent (id, pairs) =
+    let latenesses = Array.map (fun (_filename, lateness) -> lateness) pairs |> Array.map string |> List.ofArray
+
+    id::latenesses |> joinWith "\n"
+
+  Array.zip filenames latenesses
+  |> Array.groupBy (fun (a, _b) -> studentIdFromFilename a)
+  |> Array.map solutionsPerStudent
+  |> joinWith "\n\n"
+  |> printf "%s"
+

@@ -342,20 +342,6 @@ let generateInstanceAndSolution n =
   instance |> Instance.serialize |> writeToFile inFilename
   solution |> Solution.serialize |> writeToFile outFilename
 
-let instanceFilenameToSortable (s: string) =
-  let withoutExtension = splitOn "." s |> nth 0
-  let elements = splitOn "_" withoutExtension
-  let paddedSize = padLeft '0' 3 elements.[1]
-
-  sprintf "%s%s" elements.[0] paddedSize
-
-let studentIdFromFilename filename =
-  let withoutExtension = splitOn "." filename |> nth 0
-  let path = splitOn "_" withoutExtension
-  let pathElements = splitOn "/" path.[0]
-
-  pathElements.[1]
-
 let fileName (path: string): string =
   IO.Path.GetFileName path
 
@@ -363,8 +349,34 @@ let directoryName (path: string): string =
   IO.Path.GetDirectoryName path
 
 
+let instanceFilenameToSortable (path: string) =
+  let name = fileName path
+  let withoutExtension = splitOn "." name |> nth 0
+  let elements = splitOn "_" withoutExtension
+  let paddedSize = padLeft '0' 3 elements.[1]
+
+  sprintf "%s%s" elements.[0] paddedSize
+
+
+let studentIdFromPath path =
+  let name = fileName path
+  let withoutExtension = splitOn "." name |> nth 0
+  let basis = splitOn "_" withoutExtension
+
+  basis.[0]
+
+let filenameInToOut (s: string): string =
+  replaceInString "in" "out" s
+
+let isInputFile (path: string): bool =
+  (fileName path).StartsWith "in"
+
+
 let solveAllInDirectory solver dirName =
-  let filenames = filesInDirectory dirName |> Array.sortBy instanceFilenameToSortable
+  let filenames =
+    filesInDirectory dirName
+    |> Array.filter isInputFile
+    |> Array.sortBy instanceFilenameToSortable
   let instances = Array.map Instance.fromFile filenames
   let solutions = Array.map solver instances
   let latenesses = Array.map Solution.totalLateness solutions
@@ -375,16 +387,10 @@ let solveAllInDirectory solver dirName =
     id::latenesses |> joinWith "\n"
 
   Array.zip filenames latenesses
-  |> Array.groupBy (fun (a, _b) -> studentIdFromFilename a)
+  |> Array.groupBy (fun (a, _b) -> studentIdFromPath a)
   |> Array.map solutionsPerStudent
   |> joinWith "\n\n"
   |> printf "%s"
-
-let filenameInToOut (s: string): string =
-  replaceInString "in" "out" s
-
-let isInputFile (path: string): bool =
-  (fileName path).StartsWith "in"
 
 
 let measureSolving (path: string) =
@@ -407,29 +413,32 @@ let measureSolving (path: string) =
 
 let measureSolvingNTimes times path =
   let measurements = seq { 0 .. times } |> Seq.map (fun _ -> measureSolving path)
-  printfn "%A" measurements
   let sum = Seq.sum measurements
   let mean = sum / (float (Seq.length measurements))
 
   mean
 
 let f path =
-  let meanMeasurement = measureSolvingNTimes 10 path
+  let meanMeasurement = measureSolvingNTimes 30 path
 
   path, meanMeasurement
 
-let printResults (path, result) =
-  let name = fileName path
+let printResults (studentId, pairs) =
+  let resultsString =
+    pairs
+    |> Seq.map (fun (_path, result) -> result)
+    |> Seq.map string
+    |> joinWith "\n"
 
-  printfn "%s: %f" name result
-
-
-filesInDirectory "wszystkie-wrzucone"
-|> Array.sortBy instanceFilenameToSortable
-|> Array.filter isInputFile
-|> Array.map f
-|> Array.iter printResults
+  printfn "%s\n%s\n\n" studentId resultsString
 
 
+let generateMeasurementsForAllInDirectory dir =
+  filesInDirectory dir
+  |> Array.filter isInputFile
+  |> Array.sortBy instanceFilenameToSortable
+  |> Array.map f
+  |> Array.groupBy (fun (path, _result) -> studentIdFromPath path)
+  |> Array.iter printResults
 
-
+solveAllInDirectory Solution.solveReference "wszystkie-wrzucone"

@@ -117,13 +117,6 @@ let generateInstanceAndSolution n =
   instance |> Instance.serialize |> writeToFile inFilename
   solution |> Solution.serialize |> writeToFile outFilename
 
-let fileName (path: string): string =
-  IO.Path.GetFileName path
-
-let directoryName (path: string): string =
-  IO.Path.GetDirectoryName path
-
-
 let instanceFilenameToSortable (path: string) =
   let name = fileName path
   let withoutExtension = splitOn "." name |> nth 0

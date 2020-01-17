@@ -58,3 +58,9 @@ let assert2 condition description =
         printfn "Failed assertion: %s" description
         exit 1
     else ()
+
+let fileName (path: string): string =
+  IO.Path.GetFileName path
+
+let directoryName (path: string): string =
+  IO.Path.GetDirectoryName path

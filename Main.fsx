@@ -6,102 +6,71 @@ open Utils
 open Domain
 
 
-type Machine =
-  { id: int
-    tasks: Task list }
+let solveRandom (instance: Instance): Solution =
+    let random = Random()
 
-module Machine =
-  let addTask t m =
-    let newTasks = List.append m.tasks [t]
+    Seq.groupBy (fun _ -> random.Next(1, 5)) instance
+    |> Seq.map (fun (_, tasks) -> tasks)
 
-    { m with tasks = newTasks }
+let solveStatic (instance: Instance): Solution =
+    let sizePerMachine = ((Seq.length instance) ./. 4) |> ceil |> int
 
-  let empty (id: int): Machine =
-    { id = id; tasks = [] }
+    Seq.chunkBySize sizePerMachine instance
+    |> Seq.map Seq.ofArray
 
-  let lastEnd (machine: Machine): int =
-    List.fold (fun last task -> (max last task.properties.r) + task.properties.p) 0 machine.tasks
-
-  let id (m: Machine) =
-    m.id
-
-  let tasks (m: Machine) =
-    m.tasks
+let solveReference (instance: Instance): Solution =
+  chunkInto 4 instance
 
 
+module ListAlgorithm =
+  type Machine =
+    { id: int
+      tasks: Task list }
+
+  module Machine =
+    let addTask t m =
+      let newTasks = List.append m.tasks [t]
+
+      { m with tasks = newTasks }
+
+    let empty (id: int): Machine =
+      { id = id; tasks = [] }
+
+    let lastEnd (machine: Machine): int =
+      List.fold (fun last task -> (max last task.properties.r) + task.properties.p) 0 machine.tasks
+
+    let id (m: Machine) =
+      m.id
+
+    let tasks (m: Machine) =
+      m.tasks
 
 
-
-module Solution =
-    let solveRandom (instance: Instance): Solution =
-        let random = Random()
-
-        Seq.groupBy (fun _ -> random.Next(1, 5)) instance
-        |> Seq.map (fun (_, tasks) -> tasks)
-
-    let solveStatic (instance: Instance): Solution =
-        let sizePerMachine = ((Seq.length instance) ./. 4) |> ceil |> int
-
-        Seq.chunkBySize sizePerMachine instance
-        |> Seq.map Seq.ofArray
-
-    let solveReference (instance: Instance): Solution =
-      chunkInto 4 instance
-
-    let ofMachineList (machines: Machine list): Solution =
+  let solveFirstFreeMachineByReadyTime (instance: Instance): Solution =
+    let machinesToSolution (machines: Machine list): Solution =
        machines
        |> List.sortBy Machine.id
        |> List.map Machine.tasks
        |> nestedListsToSeqs
 
+    let sortedTasks = Seq.sortBy Task.readyTime instance |> List.ofSeq
 
-    let solveFirstFreeMachineByReadyTime (instance: Instance): Solution =
-      let sortedTasks = Seq.sortBy Task.readyTime instance |> List.ofSeq
+    let firstReadyMachine machines = List.minBy Machine.lastEnd machines
 
-      let firstReadyMachine machines = List.minBy Machine.lastEnd machines
+    let rec step machines tasksLeft =
+      match tasksLeft with
+      | [] -> machines
+      | task::rest ->
+          let selectedMachine = firstReadyMachine machines
+          let withTask = Machine.addTask task selectedMachine
+          let newMachines = replaceInList selectedMachine withTask machines
 
-      let rec step machines tasksLeft =
-        match tasksLeft with
-        | [] -> machines
-        | task::rest ->
-            let selectedMachine = firstReadyMachine machines
-            let withTask = Machine.addTask task selectedMachine
-            let newMachines = replaceInList selectedMachine withTask machines
+          step newMachines rest
 
-            step newMachines rest
+    let initialMachines = [(Machine.empty 1); (Machine.empty 2); (Machine.empty 3); (Machine.empty 4)]
 
-      let initialMachines = [(Machine.empty 1); (Machine.empty 2); (Machine.empty 3); (Machine.empty 4)]
+    step initialMachines sortedTasks |> machinesToSolution
 
-      step initialMachines sortedTasks |> ofMachineList
-
-
-
-    type Accumulator =
-      { lastEnd: int; lateness: int }
-
-    let latenessPerMachine (tasks: seq<Task>) =
-        let accumulate acc task =
-          let startTime = max acc.lastEnd task.properties.r
-          let endTime = startTime + task.properties.p
-          let lateness = max 0 (endTime - task.properties.d)
-
-          { lastEnd = endTime; lateness = acc.lateness + lateness }
-
-        let result = Seq.fold accumulate { lastEnd = 0; lateness = 0 } tasks
-
-        result.lateness
-
-    let totalLateness (s: Solution) =
-        Seq.map latenessPerMachine s |> Seq.sum
-
-    let serialize (s: Solution): string =
-        let machineToString (tasks: seq<Task>): string =
-          Seq.map Task.id tasks |> Seq.map string |> joinWith " "
-
-        let latenessString = totalLateness s |> string
-        let machinesStrings = Seq.map machineToString s |> joinWith "\n"
-
-        [ latenessString; machinesStrings ] |> joinWith "\n"
 
 
 // MAIN
@@ -109,7 +78,7 @@ let indexNumber = 133865
 
 let generateInstanceAndSolution n =
   let instance = Instance.generate n
-  let solution: Solution = Solution.solveReference instance
+  let solution: Solution = solveReference instance
 
   let inFilename = "in" + (string indexNumber) + "_" + (string n) + ".txt"
   let outFilename = "out" + (string indexNumber) + "_" + (string n) + ".txt"
@@ -169,7 +138,7 @@ let measureSolving (path: string) =
   let instance = Instance.fromFile path
 
   let stopWatch = Diagnostics.Stopwatch.StartNew()
-  let solution = Solution.solveFirstFreeMachineByReadyTime instance
+  let solution = ListAlgorithm.solveFirstFreeMachineByReadyTime instance
   stopWatch.Stop()
 
   solution
@@ -209,4 +178,4 @@ let generateMeasurementsForAllInDirectory dir =
   |> Array.groupBy (fun (path, _result) -> studentIdFromPath path)
   |> Array.iter printResults
 
-solveAllInDirectory Solution.solveReference "wszystkie-wrzucone"
+solveAllInDirectory solveReference "wszystkie-wrzucone"

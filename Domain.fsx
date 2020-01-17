@@ -183,3 +183,32 @@ module Instance =
         sizeString :: taskStrings
         |> joinWith "\n"
 
+
+module Solution =
+    type Accumulator =
+      { lastEnd: int; lateness: int }
+
+    let latenessPerMachine (tasks: seq<Task>) =
+        let accumulate acc task =
+          let startTime = max acc.lastEnd task.properties.r
+          let endTime = startTime + task.properties.p
+          let lateness = max 0 (endTime - task.properties.d)
+
+          { lastEnd = endTime; lateness = acc.lateness + lateness }
+
+        let result = Seq.fold accumulate { lastEnd = 0; lateness = 0 } tasks
+
+        result.lateness
+
+    let totalLateness (s: Solution) =
+        Seq.map latenessPerMachine s |> Seq.sum
+
+    let serialize (s: Solution): string =
+        let machineToString (tasks: seq<Task>): string =
+          Seq.map Task.id tasks |> Seq.map string |> joinWith " "
+
+        let latenessString = totalLateness s |> string
+        let machinesStrings = Seq.map machineToString s |> joinWith "\n"
+
+        [ latenessString; machinesStrings ] |> joinWith "\n"
+

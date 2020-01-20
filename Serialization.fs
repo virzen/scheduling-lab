@@ -9,11 +9,16 @@ module Serialization =
         let numbers = splitOn " " s |> Array.map intOfString
         TaskProperties.create numbers.[0] numbers.[1] numbers.[2]
 
-    module Task =
-      let serialize (task: Task): string =
-          [ task.properties.p; task.properties.r; task.properties.d ]
+      let serialize (tp: TaskProperties) =
+          [ tp.p; tp.r; tp.d ]
             |> List.map string
             |> joinWith " "
+
+
+    module Task =
+      let serialize (task: Task): string =
+          TaskProperties.serialize task.properties
+
 
     module Instance =
       let fromFile (filename: string): Instance =
@@ -39,11 +44,15 @@ module Serialization =
           sizeString :: taskStrings
           |> joinWith "\n"
 
-    module Solution =
-        let serialize (s: Solution): string =
-            let machineToString (tasks: seq<Task>): string =
-              Seq.map Task.id tasks |> Seq.map string |> joinWith " "
 
+    module Solution =
+        let private machineToString (tasks: seq<Task>): string =
+          tasks
+          |> Seq.map Task.id
+          |> Seq.map string
+          |> joinWith " "
+
+        let serialize (s: Solution): string =
             let latenessString = Solution.totalLateness s |> string
             let machinesStrings = Seq.map machineToString s |> joinWith "\n"
 

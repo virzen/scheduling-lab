@@ -1,6 +1,7 @@
 namespace SchedulingLab
 
 open System
+open System.IO
 
 module Utils =
   let joinWith (separator: string) (iterable: seq<string>) = String.Join(separator, iterable)
@@ -16,16 +17,16 @@ module Utils =
       Array.get array index
 
   let readLines filename =
-    IO.File.ReadAllLines(filename)
+    File.ReadAllLines(filename)
 
   let intOfString (s: string): int =
     Int32.Parse(s)
 
   let writeToFile filename s =
-    IO.File.WriteAllText(filename, s)
+    File.WriteAllText(filename, s)
 
   let filesInDirectory dirName =
-    IO.Directory.GetFiles(dirName)
+    Directory.GetFiles(dirName)
 
   let isNotEmpty s =
     String.length s > 0
@@ -61,7 +62,7 @@ module Utils =
       else ()
 
   let fileName (path: string): string =
-    IO.Path.GetFileName path
+    Path.GetFileName path
 
   let directoryName (path: string): string =
-    IO.Path.GetDirectoryName path
+    Path.GetDirectoryName path

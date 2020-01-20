@@ -34,9 +34,9 @@ module Algorithms =
        |> List.map Machine.tasks
        |> nestedListsToSeqs
 
-    let private assignToFirstFreeMachine (tasks: Task list): Solution =
-      let firstReadyMachine machines = List.minBy Machine.lastEnd machines
+    let private firstReadyMachine machines = List.minBy Machine.lastEnd machines
 
+    let private assignToFirstFreeMachine (tasks: Task list): Solution =
       let rec step machines tasksLeft =
         match tasksLeft with
         | [] -> machines
@@ -94,7 +94,7 @@ module Algorithms =
           shuffle rand xs
           List.ofArray xs
 
-      let private permutations (random: Random) (k: int) (l: 'a list): seq<'a list> =
+      let private randomPermutations (random: Random) (k: int) (l: 'a list): seq<'a list> =
         seq { 1..k } |> Seq.map (fun _ -> shuffleList random l)
 
       let private removeTask (x: Task) (l: Task list): Task list =
@@ -114,7 +114,7 @@ module Algorithms =
           assignToFirstFreeMachine path |> Solution.totalLateness
 
         let calculateNodeValue fixedNodes nodesLeft (task: Task): float =
-          let permutations = permutations random k (removeTask task nodesLeft)
+          let permutations = randomPermutations random k (removeTask task nodesLeft)
           let fullPaths = Seq.map (List.append fixedNodes) permutations
           let criteria = Seq.map calculateCriteria fullPaths
           aggr criteria

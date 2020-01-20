@@ -1,16 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>
-
   <ItemGroup>
-    <Compile Remove="DomainTypes.fs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Program.fs" />
+    <Compile Include="DomainTypes.fs" />
     <Compile Include="Utils.fs" />
+    <Compile Include="Domain.fs" />
+    <Compile Include="Algorithms.fs" />
+    <Compile Include="Serialization.fs" />
+    <Compile Include="Logging.fs" />
+    <Compile Include="Program.fs" />
   </ItemGroup>
-
 </Project>

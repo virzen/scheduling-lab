@@ -1,6 +1,5 @@
 namespace SchedulingLab
 
-// DOMAIN TYPES
 module DomainTypes =
   type TaskProperties =
       { p: int

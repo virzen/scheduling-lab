@@ -36,7 +36,7 @@ module Instance =
         seq { 1 .. size }
         |> Seq.map (fun n -> { id = n; properties = TaskProperties.generateRandom random })
 
-    module Group =
+    module private Group =
         type GenerationMethod =
             | EDD
             | Longest
@@ -127,10 +127,10 @@ module Instance =
 module Solution =
     open DomainTypes
 
-    type Accumulator =
+    type private Accumulator =
       { lastEnd: int; lateness: int }
 
-    let latenessPerMachine (tasks: seq<Task>) =
+    let private latenessPerMachine (tasks: seq<Task>) =
         let accumulate acc task =
           let startTime = max acc.lastEnd task.properties.r
           let endTime = startTime + task.properties.p
